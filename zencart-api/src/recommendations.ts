@@ -115,11 +115,23 @@ const stressSignals: Record<string, Signal> = {
   },
 };
 
-const budgetKeywords: Record<string, { priceHint: string; tier: string }> = {
-  under_20: { priceHint: "under 20 dollars", tier: "affordable" },
-  "20_50": { priceHint: "20 to 50 dollars", tier: "mid-range" },
-  "50_100": { priceHint: "premium", tier: "premium" },
-  "100_plus": { priceHint: "luxury gift set", tier: "luxury" },
+const budgetSignals: Record<string, { tier: string; productTypes: string[] }> = {
+  under_20: {
+    tier: "affordable",
+    productTypes: ["stickers", "teas", "small candles", "bookmarks", "essential oil rollers", "stress balls"],
+  },
+  "20_50": {
+    tier: "mid-range",
+    productTypes: ["books", "candle sets", "bath sets", "desk organizers", "journals", "puzzle books"],
+  },
+  "50_100": {
+    tier: "premium",
+    productTypes: ["weighted blankets", "aromatherapy diffusers", "premium tea sets", "art supply kits", "quality headphones"],
+  },
+  "100_plus": {
+    tier: "luxury",
+    productTypes: ["jewelry", "designer candles", "premium skincare sets", "high-end tech gadgets", "cashmere throws", "spa gift sets"],
+  },
 };
 
 // Gender boost/reduce categories per design doc section 7
@@ -174,11 +186,23 @@ function normalizeStress(raw: string): string {
 }
 
 function normalizeBudget(raw: string): string {
-  const v = raw.toLowerCase().trim();
-  if (v.includes("under") && v.includes("20")) return "under_20";
-  if (v.includes("20") && v.includes("50")) return "20_50";
+  const v = raw.toLowerCase().trim().replace(/\$/g, "").replace(/[–—-]/g, "-");
+  // "Under $20", "under_20", "under 20"
+  if (v.includes("under") || (v.startsWith("0") && v.includes("20"))) return "under_20";
+  if (v === "under_20") return "under_20";
+  // "$100+", "100+", "100_plus"
+  if (v.includes("100") && (v.includes("+") || v.includes("plus"))) return "100_plus";
+  if (v === "100_plus") return "100_plus";
+  // "$50–$100", "50-100", "50_100"
   if (v.includes("50") && v.includes("100")) return "50_100";
+  if (v === "50_100") return "50_100";
+  // "$20–$50", "20-50", "20_50"
+  if (v.includes("20") && v.includes("50")) return "20_50";
+  if (v === "20_50") return "20_50";
+  // Fallback: try to parse standalone numbers
   if (v.includes("100")) return "100_plus";
+  if (v.includes("50")) return "50_100";
+  if (v.includes("20")) return "20_50";
   return "20_50";
 }
 
@@ -299,7 +323,7 @@ export function getRecommendations(answers: QuizAnswers): Recommendation[] {
   const pSig = petSignals[pet] || petSignals.none;
   const cSig = colorSignals[color] || colorSignals["ocean teal"];
   const sSig = stressSignals[stress] || stressSignals.craving_treat;
-  const bInfo = budgetKeywords[budget] || budgetKeywords["20_50"];
+  const bInfo = budgetSignals[budget] || budgetSignals["20_50"];
   const gAdj = genderBoost[gender] || genderBoost["prefer not to say"];
 
   // Build a merged category pool, scored by frequency across signals
@@ -354,9 +378,10 @@ export function getRecommendations(answers: QuizAnswers): Recommendation[] {
     const adj = allAdj[i % allAdj.length];
     const adj2 = allAdj[(i + 1) % allAdj.length];
 
-    // Build keyword search string: category + 2 signal keywords + budget hint
+    // Build keyword search string: category + 2 signal keywords + budget-appropriate product type
     const kwPool = pickRandom(allKeywords, 2);
-    const searchKeywords = [category, ...kwPool, bInfo.priceHint]
+    const budgetProduct = bInfo.productTypes[i % bInfo.productTypes.length];
+    const searchKeywords = [category, ...kwPool, budgetProduct]
       .join(" ")
       .replace(/\s+/g, " ")
       .trim();
@@ -421,9 +446,9 @@ export function lookupFromMatrix(
   );
   if (exact) return exact.recommendations;
 
-  // Try partial match: stress + color (most important signals)
+  // Try partial match: stress + color + budget (budget matters for product types)
   const partial = matrix.find(
-    (e) => e.stress === stress && e.color === color
+    (e) => e.stress === stress && e.color === color && e.budget === budget
   );
   if (partial) return partial.recommendations;
 

@@ -43,6 +43,21 @@
         });
       }
 
+      // Learn dropdown toggle
+      document.querySelectorAll('.nav-dropdown-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var dropdown = this.closest('.nav-dropdown');
+          var isOpen = dropdown.classList.contains('open');
+          document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+          if (!isOpen) dropdown.classList.add('open');
+          this.setAttribute('aria-expanded', !isOpen);
+        });
+      });
+      document.addEventListener('click', function() {
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+      });
+
       // Log pageview
       if (typeof logPageview === 'function') logPageview('stats');
 
@@ -59,11 +74,11 @@
         var data = await getStats();
 
         // Populate number cards
-        var quizzesAllTime = data.quizzes_all_time || 0;
+        var quizzesAllTime = data.total_quizzes || 0;
         var quizzesThisMonth = data.quizzes_this_month || 0;
-        var avgStars = data.avg_stars || 0;
-        var pageViews30d = data.page_views_30d || 0;
-        var stressSources = data.stress_sources || {};
+        var avgStars = data.avg_review_stars || 0;
+        var pageViews30d = data.page_views_last_30_days || 0;
+        var stressDistribution = data.stress_distribution || [];
 
         document.getElementById('stat-quizzes-all').textContent = quizzesAllTime.toLocaleString();
         document.getElementById('stat-quizzes-month').textContent = quizzesThisMonth.toLocaleString();
@@ -75,7 +90,7 @@
         document.getElementById('stat-avg-rating-stars').innerHTML = renderStarsHTML(avgStars);
 
         // Build bar chart for stress sources
-        renderStressChart(stressSources);
+        renderStressChart(stressDistribution);
 
         // Show content, hide loading
         loadingEl.style.display = 'none';
@@ -101,9 +116,10 @@
       return html;
     }
 
-    function renderStressChart(stressSources) {
-      var labels = Object.keys(stressSources);
-      var values = Object.values(stressSources);
+    function renderStressChart(stressDistribution) {
+      // stressDistribution is an array of {category, count} objects
+      var labels = stressDistribution.map(function(item) { return item.category || item.stress_source || ''; });
+      var values = stressDistribution.map(function(item) { return item.count || 0; });
 
       // If no data, show a message
       if (labels.length === 0) {
@@ -220,6 +236,14 @@
         <li><a href="/zencart/">Home</a></li>
         <li><a href="/zencart/reviews.html">Reviews</a></li>
         <li><a href="/zencart/about.html">About</a></li>
+        <li class="nav-dropdown">
+          <button class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Learn <span class="dropdown-arrow" aria-hidden="true">&#9662;</span></button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="/zencart/learn/retail-therapy.html">What Is Retail Therapy?</a></li>
+            <li><a href="/zencart/learn/color-psychology.html">Color &amp; Shopping Psychology</a></li>
+            <li><a href="/zencart/learn/stress-and-shopping.html">Stress Relief Tips</a></li>
+          </ul>
+        </li>
         <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
       </ul>
     </div>

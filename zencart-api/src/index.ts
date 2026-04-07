@@ -316,6 +316,10 @@ async function handleGetStats(env: Env): Promise<Response> {
       `SELECT COUNT(*) as count FROM zencart_page_views
        WHERE created_at >= unixepoch('now', '-30 days')`
     ),
+    // 6: total approved reviews
+    env.DB.prepare(
+      "SELECT COUNT(*) as count FROM zencart_reviews WHERE approved = 1"
+    ),
   ];
 
   const batchResults = await env.DB.batch(stmts);
@@ -350,6 +354,9 @@ async function handleGetStats(env: Env): Promise<Response> {
   const pageViews30d =
     (batchResults[5].results?.[0] as Record<string, unknown>)?.count ?? 0;
 
+  const totalReviews =
+    (batchResults[6].results?.[0] as Record<string, unknown>)?.count ?? 0;
+
   return jsonResponse(
     {
       total_quizzes: totalQuizzes,
@@ -358,6 +365,7 @@ async function handleGetStats(env: Env): Promise<Response> {
       avg_review_stars: avgStars,
       stress_distribution: stressDistribution,
       page_views_last_30_days: pageViews30d,
+      total_reviews: totalReviews,
     },
     env
   );

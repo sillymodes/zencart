@@ -115,6 +115,21 @@
           links.classList.toggle('open');
         });
       }
+
+      // Learn dropdown toggle
+      document.querySelectorAll('.nav-dropdown-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var dropdown = this.closest('.nav-dropdown');
+          var isOpen = dropdown.classList.contains('open');
+          document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+          if (!isOpen) dropdown.classList.add('open');
+          this.setAttribute('aria-expanded', !isOpen);
+        });
+      });
+      document.addEventListener('click', function() {
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+      });
     });
   </script>
 </head>
@@ -142,6 +157,14 @@
         <li><a href="/zencart/" aria-current="page">Home</a></li>
         <li><a href="/zencart/reviews.html">Reviews</a></li>
         <li><a href="/zencart/about.html">About</a></li>
+        <li class="nav-dropdown">
+          <button class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Learn <span class="dropdown-arrow" aria-hidden="true">&#9662;</span></button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="/zencart/learn/retail-therapy.html">What Is Retail Therapy?</a></li>
+            <li><a href="/zencart/learn/color-psychology.html">Color &amp; Shopping Psychology</a></li>
+            <li><a href="/zencart/learn/stress-and-shopping.html">Stress Relief Tips</a></li>
+          </ul>
+        </li>
         <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
       </ul>
     </div>
@@ -176,6 +199,31 @@
           <div class="icon" aria-hidden="true">&#x1F33F;</div>
           <h3>It's intentional, not impulsive</h3>
           <p>ZenCart matches products to your actual mood and budget — so every pick feels thoughtful. The best treat is one that brings real joy and fits your life.</p>
+        </article>
+      </div>
+    </section>
+
+    <hr class="divider container">
+
+    <!-- Learn Section -->
+    <section class="learn-section container" id="learn" aria-labelledby="learn-heading">
+      <h2 id="learn-heading">Understanding stress relief</h2>
+      <p class="learn-subtitle">Explore the real science behind why a thoughtful treat can make your day better.</p>
+      <div class="learn-grid">
+        <article class="card learn-card">
+          <h3>What Is Retail Therapy?</h3>
+          <p>Discover why shopping restores your sense of control and how dopamine makes browsing feel so good — backed by real psychology research.</p>
+          <a href="/zencart/learn/retail-therapy.html" class="learn-link">Read more &rarr;</a>
+        </article>
+        <article class="card learn-card">
+          <h3>Color &amp; Shopping Psychology</h3>
+          <p>Your favorite color reveals more than you think. Learn how hue preference predicts your shopping style and what it says about your personality.</p>
+          <a href="/zencart/learn/color-psychology.html" class="learn-link">Read more &rarr;</a>
+        </article>
+        <article class="card learn-card">
+          <h3>Stress Relief Tips That Work</h3>
+          <p>Nearly half of Americans shop after a tough day. Learn budget-friendly ways to treat yourself with intention instead of regret.</p>
+          <a href="/zencart/learn/stress-and-shopping.html" class="learn-link">Read more &rarr;</a>
         </article>
       </div>
     </section>

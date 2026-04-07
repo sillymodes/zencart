@@ -63,6 +63,22 @@
           links.classList.toggle('open');
         });
       }
+
+      // Learn dropdown toggle
+      document.querySelectorAll('.nav-dropdown-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var dropdown = this.closest('.nav-dropdown');
+          var isOpen = dropdown.classList.contains('open');
+          document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+          if (!isOpen) dropdown.classList.add('open');
+          this.setAttribute('aria-expanded', !isOpen);
+        });
+      });
+      document.addEventListener('click', function() {
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+      });
+
       if (typeof logPageview === 'function') logPageview('learn/stress-and-shopping');
     });
   </script>
@@ -91,6 +107,14 @@
         <li><a href="/zencart/">Home</a></li>
         <li><a href="/zencart/reviews.html">Reviews</a></li>
         <li><a href="/zencart/about.html">About</a></li>
+        <li class="nav-dropdown">
+          <button class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Learn <span class="dropdown-arrow" aria-hidden="true">&#9662;</span></button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="/zencart/learn/retail-therapy.html">What Is Retail Therapy?</a></li>
+            <li><a href="/zencart/learn/color-psychology.html">Color &amp; Shopping Psychology</a></li>
+            <li><a href="/zencart/learn/stress-and-shopping.html">Stress Relief Tips</a></li>
+          </ul>
+        </li>
         <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
       </ul>
     </div>
