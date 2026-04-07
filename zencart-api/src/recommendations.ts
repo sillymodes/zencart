@@ -1,9 +1,13 @@
 /**
  * ZenCart Recommendation Engine
  *
- * Scoring/blending approach: each quiz answer contributes keyword fragments
- * and product categories. They are combined into 4-6 final keyword search
- * strings with titles and descriptions.
+ * Produces 6 Amazon-searchable product keyword queries based on quiz answers.
+ * Each keyword string names ONE specific product type with 1-2 relevant
+ * descriptors (material, scent, use-case), totalling 3-6 words.
+ *
+ * No emotional/personality adjectives (artistic, introspective, energetic, etc.)
+ * appear in keyword strings — those are reserved for the human-readable
+ * title and description fields only.
  */
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -23,137 +27,6 @@ export interface Recommendation {
   keywords: string;
 }
 
-// ── Signal Maps ──────────────────────────────────────────────────────────────
-
-interface Signal {
-  categories: string[];
-  keywords: string[];
-  adjectives: string[];
-}
-
-const petSignals: Record<string, Signal> = {
-  cat: {
-    categories: ["books", "candles", "bath products", "puzzles"],
-    keywords: ["cozy", "quiet", "relaxing", "introspective"],
-    adjectives: ["calming", "soothing"],
-  },
-  dog: {
-    categories: ["outdoor gear", "games", "snacks", "fitness"],
-    keywords: ["active", "fun", "social", "energetic"],
-    adjectives: ["playful", "upbeat"],
-  },
-  rabbit: {
-    categories: ["plants", "cozy textiles", "herbal teas", "home"],
-    keywords: ["soft", "gentle", "comforting", "warm"],
-    adjectives: ["cozy", "nurturing"],
-  },
-  fish: {
-    categories: ["aromatherapy", "ambient sound", "art supplies", "meditation"],
-    keywords: ["calm", "contemplative", "peaceful", "zen"],
-    adjectives: ["serene", "tranquil"],
-  },
-  none: {
-    categories: ["unique gadgets", "journals", "novelty gifts", "travel"],
-    keywords: ["creative", "adventurous", "unconventional", "unique"],
-    adjectives: ["bold", "distinctive"],
-  },
-};
-
-const colorSignals: Record<string, Signal> = {
-  "warm coral": {
-    categories: ["beauty", "bold statement products", "fashion accessories"],
-    keywords: ["vibrant", "bold", "expressive", "warm"],
-    adjectives: ["eye-catching", "statement"],
-  },
-  "deep lavender": {
-    categories: ["crystals", "stationery", "self-help", "candles"],
-    keywords: ["creative", "spiritual", "introspective", "artistic"],
-    adjectives: ["mystical", "creative"],
-  },
-  "ocean teal": {
-    categories: ["tech", "organizational", "minimalist wellness"],
-    keywords: ["minimalist", "clean", "focused", "organized"],
-    adjectives: ["sleek", "modern"],
-  },
-  "forest green": {
-    categories: ["plants", "organic wellness", "outdoor", "natural"],
-    keywords: ["natural", "earthy", "grounded", "organic"],
-    adjectives: ["fresh", "natural"],
-  },
-  "blush pink": {
-    categories: ["skincare", "cozy home", "bath and body"],
-    keywords: ["soft", "nurturing", "gentle", "comforting"],
-    adjectives: ["delicate", "pampering"],
-  },
-};
-
-const stressSignals: Record<string, Signal> = {
-  work_overload: {
-    categories: ["desk accessories", "stress relief", "focus aids", "productivity"],
-    keywords: ["desk", "office", "focus", "stress relief", "work"],
-    adjectives: ["de-stressing", "focus-boosting"],
-  },
-  relationship_tension: {
-    categories: ["self-care", "journals", "comfort food", "wellness"],
-    keywords: ["self-care", "comfort", "healing", "emotional wellness"],
-    adjectives: ["healing", "comforting"],
-  },
-  feeling_stuck: {
-    categories: ["inspiration", "journals", "creative kits", "books"],
-    keywords: ["motivation", "inspiration", "creativity", "new hobby"],
-    adjectives: ["inspiring", "fresh"],
-  },
-  physical_tiredness: {
-    categories: ["sleep aids", "massage", "recovery", "wellness"],
-    keywords: ["sleep", "relaxation", "recovery", "muscle relief", "rest"],
-    adjectives: ["restorative", "rejuvenating"],
-  },
-  craving_treat: {
-    categories: ["treats", "luxury", "indulgence", "gifts"],
-    keywords: ["treat yourself", "luxury", "gift", "indulgent", "premium"],
-    adjectives: ["luxurious", "indulgent"],
-  },
-};
-
-const budgetSignals: Record<string, { tier: string; productTypes: string[] }> = {
-  under_20: {
-    tier: "affordable",
-    productTypes: ["stickers", "teas", "small candles", "bookmarks", "essential oil rollers", "stress balls"],
-  },
-  "20_50": {
-    tier: "mid-range",
-    productTypes: ["books", "candle sets", "bath sets", "desk organizers", "journals", "puzzle books"],
-  },
-  "50_100": {
-    tier: "premium",
-    productTypes: ["weighted blankets", "aromatherapy diffusers", "premium tea sets", "art supply kits", "quality headphones"],
-  },
-  "100_plus": {
-    tier: "luxury",
-    productTypes: ["jewelry", "designer candles", "premium skincare sets", "high-end tech gadgets", "cashmere throws", "spa gift sets"],
-  },
-};
-
-// Gender boost/reduce categories per design doc section 7
-const genderBoost: Record<string, { boost: string[]; reduce: string[] }> = {
-  woman: {
-    boost: ["beauty", "skincare", "home decor", "bath and body", "self-care"],
-    reduce: ["heavy tech", "tools"],
-  },
-  man: {
-    boost: ["tech gadgets", "outdoor", "grooming", "fitness"],
-    reduce: ["heavy beauty"],
-  },
-  "non-binary": {
-    boost: ["wellness", "creative", "neutral"],
-    reduce: [],
-  },
-  "prefer not to say": {
-    boost: [],
-    reduce: [],
-  },
-};
-
 // ── Normalization helpers ────────────────────────────────────────────────────
 
 function normalizePet(raw: string): string {
@@ -167,12 +40,12 @@ function normalizePet(raw: string): string {
 
 function normalizeColor(raw: string): string {
   const v = raw.toLowerCase().trim();
-  if (v.includes("coral")) return "warm coral";
-  if (v.includes("lavender")) return "deep lavender";
-  if (v.includes("teal") || v.includes("ocean")) return "ocean teal";
-  if (v.includes("green") || v.includes("forest")) return "forest green";
-  if (v.includes("pink") || v.includes("blush")) return "blush pink";
-  return "ocean teal"; // safe default
+  if (v.includes("coral")) return "warm_coral";
+  if (v.includes("lavender")) return "deep_lavender";
+  if (v.includes("teal") || v.includes("ocean")) return "ocean_teal";
+  if (v.includes("green") || v.includes("forest")) return "forest_green";
+  if (v.includes("pink") || v.includes("blush")) return "blush_pink";
+  return "ocean_teal"; // safe default
 }
 
 function normalizeStress(raw: string): string {
@@ -187,19 +60,14 @@ function normalizeStress(raw: string): string {
 
 function normalizeBudget(raw: string): string {
   const v = raw.toLowerCase().trim().replace(/\$/g, "").replace(/[–—-]/g, "-");
-  // "Under $20", "under_20", "under 20"
   if (v.includes("under") || (v.startsWith("0") && v.includes("20"))) return "under_20";
   if (v === "under_20") return "under_20";
-  // "$100+", "100+", "100_plus"
   if (v.includes("100") && (v.includes("+") || v.includes("plus"))) return "100_plus";
   if (v === "100_plus") return "100_plus";
-  // "$50–$100", "50-100", "50_100"
   if (v.includes("50") && v.includes("100")) return "50_100";
   if (v === "50_100") return "50_100";
-  // "$20–$50", "20-50", "20_50"
   if (v.includes("20") && v.includes("50")) return "20_50";
   if (v === "20_50") return "20_50";
-  // Fallback: try to parse standalone numbers
   if (v.includes("100")) return "100_plus";
   if (v.includes("50")) return "50_100";
   if (v.includes("20")) return "20_50";
@@ -211,107 +79,502 @@ function normalizeGender(raw: string): string {
   if (v.includes("woman") || v.includes("female")) return "woman";
   if (v.includes("man") || v.includes("male")) return "man";
   if (v.includes("non")) return "non-binary";
-  return "prefer not to say";
+  return "prefer_not_to_say";
 }
 
-// ── Recommendation Templates ─────────────────────────────────────────────────
+// ── Product Catalog ──────────────────────────────────────────────────────────
+// Each budget tier has named categories; each category has Amazon-ready search strings.
 
-interface RecommendationTemplate {
-  titleTemplate: string;
-  descriptionTemplate: string;
-  primarySource: "pet" | "color" | "stress";
-  secondarySource: "pet" | "color" | "stress";
+const productCatalog: Record<string, Record<string, string[]>> = {
+  under_20: {
+    candles: [
+      "scented candle stress relief",
+      "soy candle lavender relaxation",
+      "aromatherapy candle gift set",
+      "beeswax candle natural scent",
+    ],
+    books: [
+      "adult coloring book mindfulness",
+      "guided journal self care",
+      "stress relief puzzle book",
+      "gratitude journal daily prompts",
+    ],
+    bath: [
+      "bath bomb gift set",
+      "shower steamers aromatherapy",
+      "face mask sheet pack variety",
+      "exfoliating body scrub",
+    ],
+    tea: [
+      "herbal tea sampler gift",
+      "chamomile tea bags organic",
+      "matcha green tea powder",
+      "sleepytime tea variety pack",
+    ],
+    desk: [
+      "desk stress ball set",
+      "fidget toy adults office",
+      "mini zen garden desk",
+      "desk plant succulent pot",
+    ],
+    plants: [
+      "succulent plant live small",
+      "air plant terrarium kit",
+      "lucky bamboo plant indoor",
+      "herb seed starter kit",
+    ],
+    skincare: [
+      "lip balm gift set organic",
+      "hand cream set travel size",
+      "sheet mask variety pack",
+      "under eye patches collagen",
+    ],
+    accessories: [
+      "silk scrunchie set women",
+      "essential oil roller bottles",
+      "aromatherapy inhaler stick",
+      "sleep mask satin travel",
+    ],
+    snacks: [
+      "dark chocolate gift box sampler",
+      "organic fruit snack variety",
+      "gourmet popcorn gift set",
+      "trail mix snack packs variety",
+    ],
+    outdoor: [
+      "reusable water bottle stainless",
+      "pocket hand warmers reusable",
+      "hiking socks merino wool",
+      "carabiner keychain multi tool",
+    ],
+    creative: [
+      "watercolor paint set beginners",
+      "sketchbook hardcover blank",
+      "brush pen calligraphy set",
+      "origami paper kit patterns",
+    ],
+    games: [
+      "card game adults fun",
+      "brain teaser puzzle wooden",
+      "dice game travel portable",
+      "jigsaw puzzle 500 piece",
+    ],
+  },
+  "20_50": {
+    candles: [
+      "luxury candle gift set soy",
+      "woodwick crackling candle large",
+      "yankee candle large jar",
+      "candle making kit beginners",
+    ],
+    books: [
+      "self help book bestseller",
+      "mindfulness meditation book guided",
+      "art therapy adult coloring set",
+      "inspirational book women empowerment",
+    ],
+    bath: [
+      "bath salt gift set luxury",
+      "body lotion gift set women",
+      "spa gift basket women relaxation",
+      "bubble bath luxury set",
+    ],
+    wellness: [
+      "essential oil diffuser set",
+      "acupressure mat and pillow set",
+      "meditation cushion zafu buckwheat",
+      "yoga block and strap set",
+    ],
+    tea: [
+      "tea gift set premium loose leaf",
+      "japanese ceramic tea cup set",
+      "matcha tea ceremony starter kit",
+      "electric tea kettle temperature",
+    ],
+    home: [
+      "throw pillow covers decorative",
+      "himalayan salt lamp natural",
+      "scented reed diffuser large",
+      "led flameless candle set remote",
+    ],
+    journal: [
+      "leather journal handmade",
+      "bullet journal starter kit",
+      "five minute journal daily",
+      "fountain pen and ink set",
+    ],
+    tech: [
+      "bluetooth sleep headphones headband",
+      "white noise machine sleep",
+      "smart plug wifi outlet set",
+      "portable charger power bank slim",
+    ],
+    outdoor: [
+      "insulated water bottle 32oz",
+      "camping hammock portable lightweight",
+      "hiking daypack lightweight 20L",
+      "picnic blanket waterproof outdoor",
+    ],
+    fitness: [
+      "resistance bands set exercise",
+      "foam roller muscle recovery",
+      "jump rope weighted fitness",
+      "yoga mat thick non slip",
+    ],
+    grooming: [
+      "beard grooming kit men",
+      "electric trimmer men cordless",
+      "skincare set men daily",
+      "cologne samples men set",
+    ],
+    beauty: [
+      "makeup brush set professional",
+      "skincare gift set travel size",
+      "nail polish set gel",
+      "hair oil treatment argan",
+    ],
+    creative: [
+      "watercolor paint set professional",
+      "embroidery kit beginners adults",
+      "pottery clay kit air dry",
+      "diamond painting kit adults",
+    ],
+    games: [
+      "board game strategy adults",
+      "jigsaw puzzle 1000 piece",
+      "card game party adults",
+      "escape room game at home",
+    ],
+  },
+  "50_100": {
+    wellness: [
+      "weighted blanket adult 15 lbs",
+      "aromatherapy diffuser premium large",
+      "massage pillow shiatsu neck back",
+      "acupressure mat set premium",
+    ],
+    tech: [
+      "noise cancelling earbuds wireless",
+      "smart water bottle reminder",
+      "sunrise alarm clock light therapy",
+      "kindle paperwhite e reader",
+    ],
+    home: [
+      "luxury throw blanket soft plush",
+      "himalayan salt lamp large natural",
+      "indoor water fountain tabletop",
+      "electric wax warmer set",
+    ],
+    beauty: [
+      "skincare set gift women premium",
+      "jade roller gua sha set premium",
+      "perfume sampler set women",
+      "hair styling tool set professional",
+    ],
+    tea: [
+      "japanese cast iron teapot set",
+      "tea maker electric glass kettle",
+      "premium loose leaf tea collection",
+      "ceramic tea set complete service",
+    ],
+    fitness: [
+      "yoga mat premium cork natural",
+      "adjustable dumbbell set home",
+      "fitness tracker watch waterproof",
+      "pull up bar doorway home gym",
+    ],
+    outdoor: [
+      "hiking backpack 40L waterproof",
+      "camping chair portable compact",
+      "binoculars compact birdwatching",
+      "trail running shoes men women",
+    ],
+    creative: [
+      "art supply kit professional",
+      "digital drawing tablet beginner",
+      "leather journal premium handmade",
+      "calligraphy set professional kit",
+    ],
+    kitchen: [
+      "french press coffee maker glass",
+      "chef knife set stainless steel",
+      "cast iron skillet pre seasoned",
+      "spice rack organizer gift set",
+    ],
+    sleep: [
+      "silk pillowcase set mulberry",
+      "weighted eye mask sleep lavender",
+      "sound machine sleep white noise",
+      "cooling gel pillow memory foam",
+    ],
+    plants: [
+      "indoor herb garden kit LED",
+      "bonsai tree starter kit",
+      "succulent garden planter set",
+      "self watering planter large indoor",
+    ],
+    grooming: [
+      "electric shaver men premium",
+      "grooming kit men luxury travel",
+      "cologne men designer mini set",
+      "hair clipper professional cordless",
+    ],
+  },
+  "100_plus": {
+    jewelry: [
+      "sterling silver necklace women gift",
+      "diamond pendant necklace women",
+      "pearl earrings women elegant gift",
+      "gold bracelet women 14k dainty",
+    ],
+    tech: [
+      "noise cancelling headphones premium",
+      "smart home speaker assistant",
+      "kindle paperwhite signature edition",
+      "wireless earbuds premium ANC",
+    ],
+    home: [
+      "cashmere throw blanket luxury",
+      "silk bedding set queen",
+      "luxury candle set designer large",
+      "smart diffuser essential oil wifi",
+    ],
+    beauty: [
+      "luxury skincare gift set premium",
+      "perfume women designer brand",
+      "spa gift set premium luxury women",
+      "LED face mask light therapy",
+    ],
+    wellness: [
+      "massage gun deep tissue professional",
+      "meditation headband brain sensing",
+      "infrared heating pad full body",
+      "air purifier bedroom HEPA quiet",
+    ],
+    kitchen: [
+      "espresso machine home barista",
+      "stand mixer kitchen professional",
+      "knife set japanese steel premium",
+      "pour over coffee maker set premium",
+    ],
+    fitness: [
+      "smart fitness watch GPS premium",
+      "adjustable dumbbell set 50 lbs",
+      "rowing machine home compact",
+      "yoga retreat gift card wellness",
+    ],
+    outdoor: [
+      "camping tent 2 person lightweight",
+      "trekking poles carbon fiber pair",
+      "GPS hiking watch outdoor",
+      "waterproof jacket men women hiking",
+    ],
+    sleep: [
+      "silk sheet set queen luxury",
+      "weighted blanket cooling premium",
+      "smart sleep tracker bedside",
+      "luxury down comforter all season",
+    ],
+    creative: [
+      "digital drawing tablet professional",
+      "premium art easel studio wooden",
+      "leather portfolio journal embossed",
+      "photography lighting kit studio",
+    ],
+    grooming: [
+      "electric razor men premium luxury",
+      "designer cologne men gift set",
+      "luxury shaving kit men premium",
+      "hair dryer professional salon grade",
+    ],
+    gifts: [
+      "luxury gift basket gourmet food",
+      "spa day gift card premium",
+      "wine gift set accessories premium",
+      "chocolate truffle gift box luxury",
+    ],
+  },
+};
+
+// ── Category Relevance Maps ──────────────────────────────────────────────────
+// Maps quiz signals to relevant product catalog categories.
+
+const petCategoryMap: Record<string, string[]> = {
+  cat:    ["candles", "books", "bath", "tea", "sleep", "creative"],
+  dog:    ["outdoor", "fitness", "games", "snacks", "tech", "grooming"],
+  rabbit: ["plants", "home", "tea", "bath", "candles", "sleep"],
+  fish:   ["wellness", "creative", "tea", "plants", "home", "sleep"],
+  none:   ["tech", "creative", "journal", "games", "outdoor", "kitchen"],
+};
+
+const colorCategoryMap: Record<string, string[]> = {
+  warm_coral:    ["beauty", "accessories", "jewelry", "creative", "gifts", "kitchen"],
+  deep_lavender: ["candles", "creative", "books", "journal", "wellness", "sleep"],
+  ocean_teal:    ["tech", "fitness", "desk", "outdoor", "grooming", "kitchen"],
+  forest_green:  ["plants", "outdoor", "tea", "wellness", "kitchen", "home"],
+  blush_pink:    ["skincare", "beauty", "bath", "home", "sleep", "candles"],
+};
+
+const stressCategoryMap: Record<string, string[]> = {
+  work_overload:       ["desk", "tea", "wellness", "tech", "candles", "snacks"],
+  relationship_tension:["bath", "journal", "books", "candles", "beauty", "skincare"],
+  feeling_stuck:       ["creative", "books", "journal", "games", "plants", "outdoor"],
+  physical_tiredness:  ["sleep", "wellness", "bath", "fitness", "tea", "home"],
+  craving_treat:       ["beauty", "jewelry", "gifts", "kitchen", "home", "candles"],
+};
+
+// Gender boost/reduce
+const genderCategoryBoost: Record<string, { boost: string[]; reduce: string[] }> = {
+  woman: {
+    boost: ["beauty", "skincare", "bath", "jewelry", "candles", "sleep"],
+    reduce: ["grooming"],
+  },
+  man: {
+    boost: ["tech", "grooming", "outdoor", "fitness", "kitchen"],
+    reduce: ["beauty", "jewelry", "skincare"],
+  },
+  "non-binary": {
+    boost: ["wellness", "creative", "plants", "tea", "books"],
+    reduce: [],
+  },
+  prefer_not_to_say: {
+    boost: [],
+    reduce: [],
+  },
+};
+
+// ── Title & Description Templates ────────────────────────────────────────────
+// These produce warm, personalized copy for the product cards.
+// The {keywords} field stays a clean Amazon search string.
+
+interface DisplayTemplate {
+  title: (category: string, context: DisplayContext) => string;
+  description: (category: string, context: DisplayContext) => string;
 }
 
-// 6 template slots: each blends signals differently
-const templates: RecommendationTemplate[] = [
-  {
-    titleTemplate: "{adjective} {category} for {stressContext}",
-    descriptionTemplate:
-      "A {adjective2} pick to help with {stressContext} — chosen based on your {colorLabel} and {petLabel} vibes.",
-    primarySource: "stress",
-    secondarySource: "color",
-  },
-  {
-    titleTemplate: "Your {colorLabel}-inspired {category}",
-    descriptionTemplate:
-      "Because you gravitate toward {colorLabel} tones, we think you'll love this {adjective} selection.",
-    primarySource: "color",
-    secondarySource: "pet",
-  },
-  {
-    titleTemplate: "{petLabel} lover's {category} pick",
-    descriptionTemplate:
-      "Your {petLabel} personality says you appreciate {adjective} things — here's a treat that matches.",
-    primarySource: "pet",
-    secondarySource: "stress",
-  },
-  {
-    titleTemplate: "Unwind with {adjective} {category}",
-    descriptionTemplate:
-      "Perfect for someone feeling {stressAdj} — a {adjective2} way to decompress.",
-    primarySource: "stress",
-    secondarySource: "pet",
-  },
-  {
-    titleTemplate: "{adjective} {category} treat",
-    descriptionTemplate:
-      "A {tierLabel} indulgence inspired by your love of {colorLabel} aesthetics and {petLabel} energy.",
-    primarySource: "color",
-    secondarySource: "stress",
-  },
-  {
-    titleTemplate: "Something special: {category}",
-    descriptionTemplate:
-      "Hand-picked for a {petLabel} person who could use some {adjective} comfort right now.",
-    primarySource: "pet",
-    secondarySource: "color",
-  },
-];
+interface DisplayContext {
+  pet: string;
+  color: string;
+  stress: string;
+  budget: string;
+}
 
-// Friendly labels for display in titles/descriptions
 const petLabels: Record<string, string> = {
-  cat: "cat",
-  dog: "dog",
-  rabbit: "rabbit",
-  fish: "fish",
-  none: "free-spirit",
+  cat: "cat lover",
+  dog: "dog person",
+  rabbit: "gentle soul",
+  fish: "calm spirit",
+  none: "free spirit",
 };
 
 const colorLabels: Record<string, string> = {
-  "warm coral": "warm coral",
-  "deep lavender": "deep lavender",
-  "ocean teal": "ocean teal",
-  "forest green": "forest green",
-  "blush pink": "blush pink",
+  warm_coral: "warm coral",
+  deep_lavender: "deep lavender",
+  ocean_teal: "ocean teal",
+  forest_green: "forest green",
+  blush_pink: "blush pink",
 };
 
-const stressContexts: Record<string, string> = {
+const stressLabels: Record<string, string> = {
   work_overload: "work stress",
   relationship_tension: "emotional balance",
-  feeling_stuck: "finding fresh inspiration",
+  feeling_stuck: "fresh inspiration",
   physical_tiredness: "rest and recovery",
   craving_treat: "treating yourself",
 };
 
-const stressAdjs: Record<string, string> = {
-  work_overload: "overworked",
-  relationship_tension: "emotionally drained",
-  feeling_stuck: "in need of a spark",
-  physical_tiredness: "physically worn out",
-  craving_treat: "ready for a treat",
+const budgetLabels: Record<string, string> = {
+  under_20: "thoughtful",
+  "20_50": "curated",
+  "50_100": "premium",
+  "100_plus": "luxury",
 };
 
-// ── Core algorithm ───────────────────────────────────────────────────────────
+const categoryDisplayNames: Record<string, string> = {
+  candles: "Scented Candle",
+  books: "Book",
+  bath: "Bath & Body Set",
+  tea: "Tea Set",
+  desk: "Desk Companion",
+  plants: "Indoor Plant",
+  skincare: "Skincare Pick",
+  accessories: "Accessory",
+  snacks: "Gourmet Treat",
+  outdoor: "Outdoor Gear",
+  creative: "Creative Kit",
+  games: "Game & Puzzle",
+  wellness: "Wellness Essential",
+  home: "Home Comfort",
+  journal: "Journal & Stationery",
+  tech: "Tech Gadget",
+  fitness: "Fitness Gear",
+  grooming: "Grooming Essential",
+  beauty: "Beauty Pick",
+  kitchen: "Kitchen Essential",
+  sleep: "Sleep Aid",
+  jewelry: "Jewelry",
+  gifts: "Gift Set",
+};
 
-function pickRandom<T>(arr: T[], count: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+const displayTemplates: DisplayTemplate[] = [
+  {
+    title: (cat, ctx) =>
+      `A ${budgetLabels[ctx.budget] || "special"} ${categoryDisplayNames[cat] || cat} for ${stressLabels[ctx.stress] || "you"}`,
+    description: (cat, ctx) =>
+      `Chosen for a ${petLabels[ctx.pet] || "free spirit"} drawn to ${colorLabels[ctx.color] || "calming"} tones — a perfect way to unwind.`,
+  },
+  {
+    title: (cat, ctx) =>
+      `Your ${colorLabels[ctx.color] || "calming"}-inspired ${categoryDisplayNames[cat] || cat}`,
+    description: (_cat, ctx) =>
+      `Because you gravitate toward ${colorLabels[ctx.color] || "soothing"} hues, we think you'll love this pick.`,
+  },
+  {
+    title: (cat, ctx) =>
+      `${petLabels[ctx.pet] || "Free spirit"}'s ${categoryDisplayNames[cat] || cat} pick`,
+    description: (_cat, ctx) =>
+      `Your ${petLabels[ctx.pet] || "free spirit"} personality says you appreciate comfort — here's something just for you.`,
+  },
+  {
+    title: (cat) =>
+      `Unwind with this ${categoryDisplayNames[cat] || cat}`,
+    description: (_cat, ctx) =>
+      `Perfect for someone dealing with ${stressLabels[ctx.stress] || "stress"} — a little moment of peace.`,
+  },
+  {
+    title: (cat, ctx) =>
+      `A ${budgetLabels[ctx.budget] || "special"} ${categoryDisplayNames[cat] || cat} treat`,
+    description: (_cat, ctx) =>
+      `A ${budgetLabels[ctx.budget] || "special"} indulgence inspired by your love of ${colorLabels[ctx.color] || "calming"} aesthetics.`,
+  },
+  {
+    title: (cat) =>
+      `Something special: ${categoryDisplayNames[cat] || cat}`,
+    description: (_cat, ctx) =>
+      `Hand-picked for a ${petLabels[ctx.pet] || "kindred spirit"} who could use some comfort right now.`,
+  },
+];
+
+// ── Utility ──────────────────────────────────────────────────────────────────
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+// ── Core algorithm ───────────────────────────────────────────────────────────
 
 export function getRecommendations(answers: QuizAnswers): Recommendation[] {
   const pet = normalizePet(answers.pet_choice);
@@ -320,93 +583,83 @@ export function getRecommendations(answers: QuizAnswers): Recommendation[] {
   const budget = normalizeBudget(answers.budget_tier);
   const gender = normalizeGender(answers.gender);
 
-  const pSig = petSignals[pet] || petSignals.none;
-  const cSig = colorSignals[color] || colorSignals["ocean teal"];
-  const sSig = stressSignals[stress] || stressSignals.craving_treat;
-  const bInfo = budgetSignals[budget] || budgetSignals["20_50"];
-  const gAdj = genderBoost[gender] || genderBoost["prefer not to say"];
-
-  // Build a merged category pool, scored by frequency across signals
+  // 1. Score categories based on pet, color, stress signals
   const categoryScores = new Map<string, number>();
-  const allCategories = [
-    ...pSig.categories,
-    ...cSig.categories,
-    ...sSig.categories,
-  ];
 
-  for (const cat of allCategories) {
-    categoryScores.set(cat, (categoryScores.get(cat) || 0) + 1);
+  const petCats = petCategoryMap[pet] || petCategoryMap.none;
+  const colorCats = colorCategoryMap[color] || colorCategoryMap.ocean_teal;
+  const stressCats = stressCategoryMap[stress] || stressCategoryMap.craving_treat;
+
+  // Weight: pet categories get 2 points, color 2 points, stress 3 points (most important)
+  for (const cat of petCats) {
+    categoryScores.set(cat, (categoryScores.get(cat) || 0) + 2);
+  }
+  for (const cat of colorCats) {
+    categoryScores.set(cat, (categoryScores.get(cat) || 0) + 2);
+  }
+  for (const cat of stressCats) {
+    categoryScores.set(cat, (categoryScores.get(cat) || 0) + 3);
   }
 
-  // Apply gender boost/reduce
+  // 2. Apply gender adjustments
+  const gAdj = genderCategoryBoost[gender] || genderCategoryBoost.prefer_not_to_say;
   for (const [cat, score] of categoryScores) {
-    const catLower = cat.toLowerCase();
-    if (gAdj.boost.some((b) => catLower.includes(b) || b.includes(catLower))) {
-      categoryScores.set(cat, score + 1);
+    if (gAdj.boost.includes(cat)) {
+      categoryScores.set(cat, score + 2);
     }
-    if (
-      gAdj.reduce.some((r) => catLower.includes(r) || r.includes(catLower))
-    ) {
-      categoryScores.set(cat, Math.max(0, score - 2));
+    if (gAdj.reduce.includes(cat)) {
+      categoryScores.set(cat, Math.max(0, score - 3));
     }
   }
 
-  // Sort categories by score descending
-  const sortedCategories = [...categoryScores.entries()]
-    .filter(([, s]) => s > 0)
+  // 3. Filter to categories that exist in the current budget tier
+  const tierProducts = productCatalog[budget] || productCatalog["20_50"];
+  const availableCategories = [...categoryScores.entries()]
+    .filter(([cat, score]) => score > 0 && tierProducts[cat] !== undefined)
     .sort((a, b) => b[1] - a[1])
     .map(([cat]) => cat);
 
-  // We need 6 categories; pad with top ones if needed
-  while (sortedCategories.length < 6) {
-    sortedCategories.push(
-      ...pSig.categories.slice(0, 6 - sortedCategories.length)
-    );
+  // 4. If we don't have enough categories, pad with whatever is available in this tier
+  const allTierCategories = Object.keys(tierProducts);
+  const selectedCategories: string[] = [];
+  const usedCategories = new Set<string>();
+
+  // Take top-scored categories first (no repeats)
+  for (const cat of availableCategories) {
+    if (selectedCategories.length >= 6) break;
+    if (!usedCategories.has(cat)) {
+      selectedCategories.push(cat);
+      usedCategories.add(cat);
+    }
   }
 
-  // Pick keyword pools
-  const allKeywords = [...pSig.keywords, ...cSig.keywords, ...sSig.keywords];
-  const allAdj = [...pSig.adjectives, ...cSig.adjectives, ...sSig.adjectives];
+  // Pad with remaining tier categories if needed
+  if (selectedCategories.length < 6) {
+    const remaining = shuffle(allTierCategories.filter(c => !usedCategories.has(c)));
+    for (const cat of remaining) {
+      if (selectedCategories.length >= 6) break;
+      selectedCategories.push(cat);
+      usedCategories.add(cat);
+    }
+  }
 
+  // 5. Build 6 recommendations
+  const context: DisplayContext = { pet, color, stress, budget };
   const results: Recommendation[] = [];
 
   for (let i = 0; i < 6; i++) {
-    const tmpl = templates[i];
-    const category = sortedCategories[i] || sortedCategories[0];
+    const category = selectedCategories[i] || selectedCategories[0];
+    const productList = tierProducts[category];
+    const keywords = pickRandom(productList);
+    const template = displayTemplates[i % displayTemplates.length];
 
-    // Pick 1-2 adjectives and 2-3 keywords for the search string
-    const adj = allAdj[i % allAdj.length];
-    const adj2 = allAdj[(i + 1) % allAdj.length];
-
-    // Build keyword search string: category + 2 signal keywords + budget-appropriate product type
-    const kwPool = pickRandom(allKeywords, 2);
-    const budgetProduct = bInfo.productTypes[i % bInfo.productTypes.length];
-    const searchKeywords = [category, ...kwPool, budgetProduct]
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Fill in template
-    let title = tmpl.titleTemplate
-      .replace("{adjective}", capitalize(adj))
-      .replace("{category}", category)
-      .replace("{stressContext}", stressContexts[stress] || "self-care")
-      .replace("{colorLabel}", colorLabels[color] || color)
-      .replace("{petLabel}", petLabels[pet] || pet);
-
-    let description = tmpl.descriptionTemplate
-      .replace("{adjective}", adj)
-      .replace("{adjective2}", adj2)
-      .replace("{stressContext}", stressContexts[stress] || "self-care")
-      .replace("{stressAdj}", stressAdjs[stress] || "stressed")
-      .replace("{colorLabel}", colorLabels[color] || color)
-      .replace("{petLabel}", petLabels[pet] || pet)
-      .replace("{tierLabel}", bInfo.tier);
+    const title = capitalize(template.title(category, context));
+    const description = template.description(category, context);
 
     results.push({
-      title: capitalize(title.trim()),
-      description: description.trim(),
-      keywords: searchKeywords,
+      title,
+      description,
+      keywords,
     });
   }
 
@@ -446,7 +699,7 @@ export function lookupFromMatrix(
   );
   if (exact) return exact.recommendations;
 
-  // Try partial match: stress + color + budget (budget matters for product types)
+  // Try partial match: stress + color + budget
   const partial = matrix.find(
     (e) => e.stress === stress && e.color === color && e.budget === budget
   );
@@ -457,18 +710,14 @@ export function lookupFromMatrix(
 
 // ── Generate seed matrix (for seed-config.sql) ──────────────────────────────
 
-/**
- * Generate a comprehensive matrix covering common quiz answer combinations.
- * This is used to create the seed SQL file.
- */
 export function generateSeedMatrix(): MatrixEntry[] {
   const pets = ["cat", "dog", "rabbit", "fish", "none"];
   const colors = [
-    "warm coral",
-    "deep lavender",
-    "ocean teal",
-    "forest green",
-    "blush pink",
+    "warm_coral",
+    "deep_lavender",
+    "ocean_teal",
+    "forest_green",
+    "blush_pink",
   ];
   const stresses = [
     "work_overload",
@@ -481,16 +730,13 @@ export function generateSeedMatrix(): MatrixEntry[] {
 
   const matrix: MatrixEntry[] = [];
 
-  // Generate entries for all stress x color combinations (25 total)
-  // Each with a representative pet and budget to keep the seed manageable
   for (const stress of stresses) {
     for (const color of colors) {
       for (const budget of budgets) {
-        // Use the blending algorithm with a default pet for this combo
         const pet = pets[stresses.indexOf(stress) % pets.length];
         const recs = getRecommendations({
           pet_choice: pet,
-          color_choice: color,
+          color_choice: color.replace(/_/g, " "),
           gender: "prefer not to say",
           age_group: "25-34",
           stress_source: stress.replace(/_/g, " "),
