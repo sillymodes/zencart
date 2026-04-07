@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Stylized lotus/leaf icon in brand green -->
+  <!-- Center petal -->
+  <path d="M16 4 C16 4 10 12 10 20 C10 24 12.5 27 16 28 C19.5 27 22 24 22 20 C22 12 16 4 16 4Z" fill="#3D9970" opacity="0.9"/>
+  <!-- Left petal -->
+  <path d="M16 10 C16 10 6 14 4 20 C3 23 4.5 26 7 27 C10 28 13 26 14.5 22 C16.5 17 16 10 16 10Z" fill="#3D9970" opacity="0.65"/>
+  <!-- Right petal -->
+  <path d="M16 10 C16 10 26 14 28 20 C29 23 27.5 26 25 27 C22 28 19 26 17.5 22 C15.5 17 16 10 16 10Z" fill="#3D9970" opacity="0.65"/>
+  <!-- Center vein line -->
+  <line x1="16" y1="8" x2="16" y2="26" stroke="#2d7354" stroke-width="0.7" stroke-linecap="round" opacity="0.5"/>
+</svg>

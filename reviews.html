@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Reviews - What People Say About ZenCart Picks</title>
+  <meta name="description" content="Read honest reviews from people who used ZenCart to find their perfect stress-relief products. Share your own experience and help others discover their treat.">
+  <link rel="canonical" href="https://sillymodes.github.io/zencart/reviews.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="User Reviews - What People Say About ZenCart Picks">
+  <meta property="og:description" content="Read honest reviews from people who used ZenCart to find their perfect stress-relief products.">
+  <meta property="og:image" content="https://sillymodes.github.io/zencart/assets/img/og-image.jpg">
+  <meta property="og:url" content="https://sillymodes.github.io/zencart/reviews.html">
+  <meta property="og:type" content="website">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/zencart/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/zencart/favicon.ico">
+  <link rel="apple-touch-icon" href="/zencart/assets/img/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/zencart/assets/css/style.css">
+
+  <!-- Scripts -->
+  <script src="/zencart/assets/js/api.js" defer></script>
+
+  <!-- JSON-LD AggregateRating (populated by JS) -->
+  <script id="reviews-jsonld" type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "ZenCart",
+    "url": "https://sillymodes.github.io/zencart/",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "0",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "0"
+    }
+  }
+  </script>
+
+  <script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile nav toggle
+      var toggle = document.querySelector('.nav-toggle');
+      var links = document.querySelector('.nav-links');
+      if (toggle && links) {
+        toggle.addEventListener('click', function() {
+          links.classList.toggle('open');
+        });
+      }
+
+      // Log pageview
+      if (typeof logPageview === 'function') logPageview('reviews');
+
+      // State
+      window.reviewsState = {
+        currentPage: 0,
+        totalPages: 1,
+        loading: false,
+        selectedStars: 0
+      };
+
+      // Initialize
+      loadAverageRating();
+      loadMoreReviews();
+      initStarWidget();
+      initForm();
+    });
+
+    /* ---- Average rating header ---- */
+    async function loadAverageRating() {
+      try {
+        var data = await getStats();
+        var avg = data.avg_stars || 0;
+        var count = data.total_reviews || 0;
+
+        document.getElementById('avg-rating-number').textContent = avg.toFixed(1);
+        document.getElementById('avg-rating-stars').innerHTML = renderStars(avg);
+        document.getElementById('avg-rating-count').textContent = count.toLocaleString() + ' review' + (count !== 1 ? 's' : '');
+
+        // Update JSON-LD
+        var ldEl = document.getElementById('reviews-jsonld');
+        if (ldEl && count > 0) {
+          var ld = JSON.parse(ldEl.textContent);
+          ld.aggregateRating.ratingValue = avg.toFixed(1);
+          ld.aggregateRating.ratingCount = String(count);
+          ldEl.textContent = JSON.stringify(ld);
+        }
+
+        document.getElementById('avg-rating-section').style.display = 'block';
+      } catch (err) {
+        // Silently fail — reviews list will still load
+        console.error('Failed to load average rating:', err);
+      }
+    }
+
+    function renderStars(rating) {
+      var html = '';
+      for (var i = 1; i <= 5; i++) {
+        if (rating >= i - 0.25) {
+          html += '<span class="star-filled" aria-hidden="true">&#9733;</span>';
+        } else if (rating >= i - 0.75) {
+          html += '<span class="star-half" aria-hidden="true">&#9733;</span>';
+        } else {
+          html += '<span class="star-empty" aria-hidden="true">&#9734;</span>';
+        }
+      }
+      return html;
+    }
+
+    /* ---- Star tap widget ---- */
+    function initStarWidget() {
+      var container = document.getElementById('star-widget');
+      var stars = container.querySelectorAll('.star-btn');
+
+      stars.forEach(function(star) {
+        star.addEventListener('click', function() {
+          var value = parseInt(this.getAttribute('data-value'));
+          window.reviewsState.selectedStars = value;
+          updateStarWidget(value);
+        });
+
+        star.addEventListener('mouseenter', function() {
+          var value = parseInt(this.getAttribute('data-value'));
+          highlightStars(value);
+        });
+      });
+
+      container.addEventListener('mouseleave', function() {
+        highlightStars(window.reviewsState.selectedStars);
+      });
+    }
+
+    function updateStarWidget(value) {
+      highlightStars(value);
+      document.getElementById('star-widget').setAttribute('aria-valuenow', value);
+      document.getElementById('star-value-label').textContent = value + ' of 5 stars';
+
+      // Clear any star error
+      var errEl = document.getElementById('star-error');
+      if (errEl) errEl.style.display = 'none';
+    }
+
+    function highlightStars(upTo) {
+      var stars = document.querySelectorAll('#star-widget .star-btn');
+      stars.forEach(function(star) {
+        var val = parseInt(star.getAttribute('data-value'));
+        if (val <= upTo) {
+          star.classList.add('active');
+          star.innerHTML = '&#9733;';
+        } else {
+          star.classList.remove('active');
+          star.innerHTML = '&#9734;';
+        }
+      });
+    }
+
+    /* ---- Character counter ---- */
+    function updateCharCount() {
+      var textarea = document.getElementById('review-comment');
+      var counter = document.getElementById('char-count');
+      var len = textarea.value.length;
+      counter.textContent = len + ' / 280';
+      if (len > 280) {
+        counter.classList.add('over-limit');
+      } else {
+        counter.classList.remove('over-limit');
+      }
+    }
+
+    /* ---- Form submission ---- */
+    function initForm() {
+      var form = document.getElementById('review-form');
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        var stars = window.reviewsState.selectedStars;
+        var displayName = document.getElementById('review-name').value.trim();
+        var comment = document.getElementById('review-comment').value.trim();
+
+        // Validate
+        if (stars < 1) {
+          var errEl = document.getElementById('star-error');
+          errEl.textContent = 'Please select a star rating.';
+          errEl.style.display = 'block';
+          return;
+        }
+        if (comment.length > 280) {
+          return; // textarea maxlength should prevent this but just in case
+        }
+
+        var submitBtn = document.getElementById('review-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        try {
+          var payload = { stars: stars };
+          if (displayName) payload.display_name = displayName;
+          if (comment) payload.comment = comment;
+
+          // Include session_id if available
+          var sessionId = sessionStorage.getItem('zencart_session');
+          if (sessionId) payload.session_id = sessionId;
+
+          await submitReview(payload);
+
+          // Show success
+          document.getElementById('review-form-section').style.display = 'none';
+          document.getElementById('review-success').style.display = 'block';
+
+          // Reload reviews to show the new one
+          window.reviewsState.currentPage = 0;
+          document.getElementById('reviews-list').innerHTML = '';
+          loadMoreReviews();
+          loadAverageRating();
+
+        } catch (err) {
+          var formErr = document.getElementById('form-error');
+          formErr.textContent = 'Something went wrong. Please try again.';
+          formErr.style.display = 'block';
+          console.error('Failed to submit review:', err);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit review';
+        }
+      });
+    }
+
+    /* ---- Load reviews ---- */
+    async function loadMoreReviews() {
+      if (window.reviewsState.loading) return;
+      window.reviewsState.loading = true;
+
+      var listEl = document.getElementById('reviews-list');
+      var loadMoreBtn = document.getElementById('load-more-btn');
+      var loadingEl = document.getElementById('reviews-loading');
+      var errorEl = document.getElementById('reviews-error');
+
+      loadingEl.style.display = 'block';
+      if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+
+      try {
+        var nextPage = window.reviewsState.currentPage + 1;
+        var data = await getReviews(nextPage);
+
+        var reviews = data.reviews || [];
+        window.reviewsState.currentPage = data.page || nextPage;
+        window.reviewsState.totalPages = data.total_pages || 1;
+
+        if (reviews.length === 0 && nextPage === 1) {
+          listEl.innerHTML = '<p class="text-center text-muted reviews-empty">No reviews yet. Be the first to share your experience!</p>';
+        } else {
+          reviews.forEach(function(review) {
+            listEl.appendChild(createReviewCard(review));
+          });
+        }
+
+        // Show/hide load more
+        if (window.reviewsState.currentPage < window.reviewsState.totalPages) {
+          loadMoreBtn.style.display = 'inline-flex';
+        }
+
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'none';
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        if (window.reviewsState.currentPage === 0) {
+          errorEl.style.display = 'block';
+        }
+        console.error('Failed to load reviews:', err);
+      } finally {
+        window.reviewsState.loading = false;
+      }
+    }
+
+    function createReviewCard(review) {
+      var card = document.createElement('article');
+      card.className = 'card review-card';
+
+      var starsHtml = renderStars(review.stars || 0);
+      var name = review.display_name || 'Anonymous';
+      var comment = review.comment || '';
+      var timeAgo = getRelativeTime(review.created_at);
+
+      card.innerHTML =
+        '<div class="review-card-header">' +
+          '<div class="review-stars">' + starsHtml + '</div>' +
+          '<span class="review-date">' + escapeHtml(timeAgo) + '</span>' +
+        '</div>' +
+        '<div class="review-name">' + escapeHtml(name) + '</div>' +
+        (comment ? '<p class="review-comment">' + escapeHtml(comment) + '</p>' : '');
+
+      return card;
+    }
+
+    function getRelativeTime(timestamp) {
+      if (!timestamp) return '';
+      // Handle both unix seconds and milliseconds
+      var date = new Date(timestamp > 9999999999 ? timestamp : timestamp * 1000);
+      var now = new Date();
+      var diffMs = now - date;
+      var diffSec = Math.floor(diffMs / 1000);
+      var diffMin = Math.floor(diffSec / 60);
+      var diffHr = Math.floor(diffMin / 60);
+      var diffDay = Math.floor(diffHr / 24);
+      var diffWeek = Math.floor(diffDay / 7);
+      var diffMonth = Math.floor(diffDay / 30);
+
+      if (diffSec < 60) return 'Just now';
+      if (diffMin < 60) return diffMin + ' minute' + (diffMin !== 1 ? 's' : '') + ' ago';
+      if (diffHr < 24) return diffHr + ' hour' + (diffHr !== 1 ? 's' : '') + ' ago';
+      if (diffDay < 7) return diffDay + ' day' + (diffDay !== 1 ? 's' : '') + ' ago';
+      if (diffWeek < 5) return diffWeek + ' week' + (diffWeek !== 1 ? 's' : '') + ' ago';
+      if (diffMonth < 12) return diffMonth + ' month' + (diffMonth !== 1 ? 's' : '') + ' ago';
+
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(text));
+      return div.innerHTML;
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="container">
+      <a href="/zencart/" class="nav-brand" aria-label="ZenCart Home">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4C12 4 8 8 8 14c0 4 2 7 4 9 1.5 1.5 3 2.5 4 3 1-0.5 2.5-1.5 4-3 2-2 4-5 4-9 0-6-4-10-8-10z" fill="#3D9970" opacity="0.3"/>
+          <path d="M16 6c-3 0-6 3.5-6 8.5 0 3.5 1.8 6 3.5 7.8C14.7 23.5 15.5 24 16 24.5c.5-.5 1.3-1 2.5-2.2C20.2 20.5 22 18 22 14.5 22 9.5 19 6 16 6z" fill="#3D9970"/>
+          <path d="M16 11c-1.5 0-3 1.2-3 3.5s1.5 4 3 5c1.5-1 3-2.7 3-5S17.5 11 16 11z" fill="#F0F7F4"/>
+        </svg>
+        ZenCart
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links">
+        <li><a href="/zencart/">Home</a></li>
+        <li><a href="/zencart/reviews.html" aria-current="page">Reviews</a></li>
+        <li><a href="/zencart/about.html">About</a></li>
+        <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Header with average rating -->
+    <section class="reviews-header">
+      <h1>What people are saying</h1>
+      <p class="text-muted">Honest reviews from people who found their perfect treat.</p>
+      <div id="avg-rating-section" class="avg-rating-display" style="display:none;">
+        <div class="avg-rating-big">
+          <span class="avg-rating-number" id="avg-rating-number">--</span>
+          <span class="avg-rating-of">/ 5</span>
+        </div>
+        <div class="avg-rating-stars-row" id="avg-rating-stars"></div>
+        <p class="avg-rating-count text-muted" id="avg-rating-count">-- reviews</p>
+      </div>
+    </section>
+
+    <div class="container page-content reviews-page-content">
+
+      <!-- Review submission form -->
+      <section id="review-form-section" class="review-form-section card" aria-label="Submit a review">
+        <h2>Share your experience</h2>
+        <p class="text-muted">How did ZenCart help you find your treat?</p>
+
+        <form id="review-form" novalidate>
+          <!-- Star tap widget -->
+          <div class="form-group">
+            <label class="form-label">Your rating <span class="required">*</span></label>
+            <div id="star-widget" class="star-widget" role="radiogroup" aria-label="Star rating" aria-valuenow="0">
+              <button type="button" class="star-btn" data-value="1" aria-label="1 star">&#9734;</button>
+              <button type="button" class="star-btn" data-value="2" aria-label="2 stars">&#9734;</button>
+              <button type="button" class="star-btn" data-value="3" aria-label="3 stars">&#9734;</button>
+              <button type="button" class="star-btn" data-value="4" aria-label="4 stars">&#9734;</button>
+              <button type="button" class="star-btn" data-value="5" aria-label="5 stars">&#9734;</button>
+            </div>
+            <span class="sr-only" id="star-value-label" aria-live="polite">0 of 5 stars</span>
+            <p id="star-error" class="form-error" style="display:none;"></p>
+          </div>
+
+          <!-- Display name -->
+          <div class="form-group">
+            <label for="review-name" class="form-label">Display name <span class="optional">(optional)</span></label>
+            <input type="text" id="review-name" class="form-input" placeholder="Anonymous" maxlength="50" autocomplete="off">
+          </div>
+
+          <!-- Comment -->
+          <div class="form-group">
+            <label for="review-comment" class="form-label">Comment <span class="optional">(optional)</span></label>
+            <textarea id="review-comment" class="form-textarea" placeholder="Tell us about your experience..." maxlength="280" rows="3" oninput="updateCharCount()"></textarea>
+            <div class="char-counter" id="char-count">0 / 280</div>
+          </div>
+
+          <!-- Submit -->
+          <p id="form-error" class="form-error" style="display:none;"></p>
+          <button type="submit" id="review-submit-btn" class="btn btn-primary review-submit-btn">Submit review</button>
+        </form>
+      </section>
+
+      <!-- Success message (hidden by default) -->
+      <div id="review-success" class="review-success card" style="display:none;">
+        <div class="success-icon">&#10003;</div>
+        <h3>Thank you for your review!</h3>
+        <p class="text-muted">Your feedback helps others discover their perfect treat.</p>
+        <button class="btn btn-outline" onclick="document.getElementById('review-success').style.display='none'; document.getElementById('review-form-section').style.display='block'; document.getElementById('review-form').reset(); window.reviewsState.selectedStars=0; highlightStars(0); updateCharCount();">Write another</button>
+      </div>
+
+      <!-- Reviews list -->
+      <section class="reviews-list-section" aria-label="User reviews">
+        <h2 class="reviews-list-heading">Recent reviews</h2>
+
+        <div id="reviews-list" class="reviews-list"></div>
+
+        <!-- Loading state -->
+        <div id="reviews-loading" class="reviews-loading-state" style="display:none;">
+          <div class="spinner"></div>
+          <p class="text-muted text-center">Loading reviews...</p>
+        </div>
+
+        <!-- Error state -->
+        <div id="reviews-error" class="error-state" style="display:none;">
+          <p>We couldn't load reviews right now. Please try again later.</p>
+          <button class="btn btn-outline" onclick="window.reviewsState.currentPage=0; document.getElementById('reviews-list').innerHTML=''; loadMoreReviews();">Try again</button>
+        </div>
+
+        <!-- Load more -->
+        <div class="text-center" style="padding: 1rem 0 2rem;">
+          <button id="load-more-btn" class="btn btn-outline" style="display:none;" onclick="loadMoreReviews()">Load more reviews</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p class="footer-privacy">We don't store personal information. Quiz answers are saved anonymously to improve recommendations.</p>
+      <div class="footer-links">
+        <a href="/zencart/stats.html">Stats</a>
+        <a href="/zencart/sitemap.xml">Sitemap</a>
+        <a href="/zencart/about.html">About</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 ZenCart. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

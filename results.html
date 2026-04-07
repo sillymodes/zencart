@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Personalized Picks - Stress Relief Products | ZenCart</title>
+  <meta name="description" content="Here are your personalized stress-relief product recommendations, chosen based on your mood, personality, and budget. Shop curated Amazon picks just for you.">
+  <link rel="canonical" href="https://sillymodes.github.io/zencart/results.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Your Personalized Picks - Stress Relief Products | ZenCart">
+  <meta property="og:description" content="Personalized stress-relief product recommendations chosen just for you based on your quiz answers.">
+  <meta property="og:image" content="https://sillymodes.github.io/zencart/assets/img/og-image.jpg">
+  <meta property="og:url" content="https://sillymodes.github.io/zencart/results.html">
+  <meta property="og:type" content="website">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/zencart/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/zencart/favicon.ico">
+  <link rel="apple-touch-icon" href="/zencart/assets/img/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/zencart/assets/css/style.css">
+
+  <!-- Scripts -->
+  <script src="/zencart/assets/js/api.js" defer></script>
+  <script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile nav toggle
+      var toggle = document.querySelector('.nav-toggle');
+      var links = document.querySelector('.nav-links');
+      if (toggle && links) {
+        toggle.addEventListener('click', function() {
+          links.classList.toggle('open');
+        });
+      }
+
+      // Log pageview
+      if (typeof logPageview === 'function') logPageview('results');
+
+      var sessionId = sessionStorage.getItem('zencart_session_id');
+      var resultsContent = document.getElementById('results-content');
+      var noSession = document.getElementById('results-no-session');
+      var loadingEl = document.getElementById('results-loading');
+      var grid = document.getElementById('results-grid');
+      var footer = document.getElementById('results-footer-section');
+
+      if (!sessionId) {
+        noSession.style.display = 'block';
+        loadingEl.style.display = 'none';
+        return;
+      }
+
+      // Fetch recommendations
+      getRecommendations(sessionId)
+        .then(function(data) {
+          loadingEl.style.display = 'none';
+          var recs = data.recommendations || data.keywords_shown || [];
+          if (!recs || recs.length === 0) {
+            grid.innerHTML = '<div class="error-state"><p>We couldn\'t find recommendations for this session. Please try taking the quiz again.</p></div>';
+            return;
+          }
+
+          // Render product cards
+          var html = '';
+          recs.forEach(function(rec) {
+            var title = rec.title || 'Recommended Product';
+            var desc = rec.description || 'A stress-relief product picked just for you.';
+            var keywords = rec.keywords || rec.title || 'stress relief';
+            var amazonUrl = 'https://www.amazon.com/s?k=' + encodeURIComponent(keywords) + '&tag=sillymodes-20';
+
+            html += '<article class="card product-card">' +
+              '<h3>' + escapeHtml(title) + '</h3>' +
+              '<p class="product-desc">' + escapeHtml(desc) + '</p>' +
+              '<a href="' + amazonUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Shop on Amazon &rarr;</a>' +
+              '</article>';
+          });
+          grid.innerHTML = html;
+          resultsContent.style.display = 'block';
+          footer.style.display = 'block';
+        })
+        .catch(function(err) {
+          console.error('Error loading recommendations:', err);
+          loadingEl.style.display = 'none';
+          grid.innerHTML = '<div class="error-state">' +
+            '<div class="error-icon">&#x1F343;</div>' +
+            '<p>We had trouble loading your recommendations. Please try again.</p>' +
+            '<a href="/zencart/quiz.html" class="btn btn-outline">Retake Quiz</a>' +
+            '</div>';
+          resultsContent.style.display = 'block';
+        });
+    });
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="container">
+      <a href="/zencart/" class="nav-brand" aria-label="ZenCart Home">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4C12 4 8 8 8 14c0 4 2 7 4 9 1.5 1.5 3 2.5 4 3 1-0.5 2.5-1.5 4-3 2-2 4-5 4-9 0-6-4-10-8-10z" fill="#3D9970" opacity="0.3"/>
+          <path d="M16 6c-3 0-6 3.5-6 8.5 0 3.5 1.8 6 3.5 7.8C14.7 23.5 15.5 24 16 24.5c.5-.5 1.3-1 2.5-2.2C20.2 20.5 22 18 22 14.5 22 9.5 19 6 16 6z" fill="#3D9970"/>
+          <path d="M16 11c-1.5 0-3 1.2-3 3.5s1.5 4 3 5c1.5-1 3-2.7 3-5S17.5 11 16 11z" fill="#F0F7F4"/>
+        </svg>
+        ZenCart
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links">
+        <li><a href="/zencart/">Home</a></li>
+        <li><a href="/zencart/reviews.html">Reviews</a></li>
+        <li><a href="/zencart/about.html">About</a></li>
+        <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- No session state -->
+    <div id="results-no-session" class="results-no-session" style="display:none;">
+      <h2>We don't have your quiz results yet</h2>
+      <p>It looks like you haven't taken the quiz, or your session has expired. Take the quiz to get your personalized picks.</p>
+      <a href="/zencart/quiz.html" class="btn btn-primary">Take the quiz &rarr;</a>
+    </div>
+
+    <!-- Loading state -->
+    <div id="results-loading" class="quiz-loading active">
+      <div class="spinner"></div>
+      <p class="text-muted">Loading your personalized picks...</p>
+    </div>
+
+    <!-- Results content -->
+    <div id="results-content" style="display:none;">
+      <section class="results-header">
+        <h1>Your personalized picks</h1>
+        <p>We matched these to your mood, style, and budget. Take your time browsing.</p>
+      </section>
+
+      <div class="container">
+        <div class="results-grid" id="results-grid">
+          <!-- Product cards injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Results footer -->
+    <section id="results-footer-section" class="results-footer container" style="display:none;">
+      <p class="encouragement">These picks were chosen just for you &#x1F33F;</p>
+      <p class="text-muted" style="margin-bottom: 1.5rem;">Remember: the best treat is one that brings real joy and fits your life.</p>
+      <a href="/zencart/quiz.html" class="btn btn-outline">Retake quiz</a>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p class="footer-privacy">We don't store personal information. Quiz answers are saved anonymously to improve recommendations.</p>
+      <div class="footer-links">
+        <a href="/zencart/stats.html">Stats</a>
+        <a href="/zencart/sitemap.xml">Sitemap</a>
+        <a href="/zencart/about.html">About</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 ZenCart. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

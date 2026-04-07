@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stress-Relief Quiz - Find Your Perfect Treat | ZenCart</title>
+  <meta name="description" content="Answer 6 quick questions about your mood, style, and budget. ZenCart will match you with stress-relief products chosen just for you. Free, no sign-up needed.">
+  <link rel="canonical" href="https://sillymodes.github.io/zencart/quiz.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Stress-Relief Quiz - Find Your Perfect Treat | ZenCart">
+  <meta property="og:description" content="Answer 6 quick questions and get personalized stress-relief product recommendations matched to your mood.">
+  <meta property="og:image" content="https://sillymodes.github.io/zencart/assets/img/og-image.jpg">
+  <meta property="og:url" content="https://sillymodes.github.io/zencart/quiz.html">
+  <meta property="og:type" content="website">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/zencart/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/zencart/favicon.ico">
+  <link rel="apple-touch-icon" href="/zencart/assets/img/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/zencart/assets/css/style.css">
+
+  <!-- Scripts -->
+  <script src="/zencart/assets/js/api.js" defer></script>
+  <script src="/zencart/assets/js/quiz.js" defer></script>
+  <script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+      var toggle = document.querySelector('.nav-toggle');
+      var links = document.querySelector('.nav-links');
+      if (toggle && links) {
+        toggle.addEventListener('click', function() {
+          links.classList.toggle('open');
+        });
+      }
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="container">
+      <a href="/zencart/" class="nav-brand" aria-label="ZenCart Home">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4C12 4 8 8 8 14c0 4 2 7 4 9 1.5 1.5 3 2.5 4 3 1-0.5 2.5-1.5 4-3 2-2 4-5 4-9 0-6-4-10-8-10z" fill="#3D9970" opacity="0.3"/>
+          <path d="M16 6c-3 0-6 3.5-6 8.5 0 3.5 1.8 6 3.5 7.8C14.7 23.5 15.5 24 16 24.5c.5-.5 1.3-1 2.5-2.2C20.2 20.5 22 18 22 14.5 22 9.5 19 6 16 6z" fill="#3D9970"/>
+          <path d="M16 11c-1.5 0-3 1.2-3 3.5s1.5 4 3 5c1.5-1 3-2.7 3-5S17.5 11 16 11z" fill="#F0F7F4"/>
+        </svg>
+        ZenCart
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links">
+        <li><a href="/zencart/">Home</a></li>
+        <li><a href="/zencart/reviews.html">Reviews</a></li>
+        <li><a href="/zencart/about.html">About</a></li>
+        <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="quiz-container">
+
+      <!-- Progress Bar -->
+      <div class="quiz-progress" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="6" aria-label="Quiz progress">
+        <div class="quiz-progress-bar">
+          <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 16.67%"></div>
+        </div>
+        <p class="quiz-progress-text" id="quiz-progress-text">Question 1 of 6</p>
+      </div>
+
+      <!-- Step 1: Pet Preference -->
+      <section class="quiz-step active" id="step-1" data-key="pet_choice" aria-label="Question 1: Pet preference">
+        <h2>Which of these would make you happiest right now?</h2>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="cat" type="button">
+            <span class="emoji" aria-hidden="true">&#x1F431;</span>
+            <span>Curling up with a cat</span>
+          </button>
+          <button class="quiz-option" data-value="dog" type="button">
+            <span class="emoji" aria-hidden="true">&#x1F436;</span>
+            <span>Playing with a dog</span>
+          </button>
+          <button class="quiz-option" data-value="rabbit" type="button">
+            <span class="emoji" aria-hidden="true">&#x1F430;</span>
+            <span>Holding a soft rabbit</span>
+          </button>
+          <button class="quiz-option" data-value="fish" type="button">
+            <span class="emoji" aria-hidden="true">&#x1F41F;</span>
+            <span>Watching calm fish swim</span>
+          </button>
+          <button class="quiz-option" data-value="none" type="button">
+            <span class="emoji" aria-hidden="true">&#x1F33F;</span>
+            <span>Just fresh air and freedom</span>
+          </button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" style="display:none" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Step 2: Color Palette -->
+      <section class="quiz-step" id="step-2" data-key="color_choice" aria-label="Question 2: Color preference">
+        <h2>Which color palette feels most calming to you?</h2>
+        <div class="quiz-colors">
+          <button class="color-swatch" data-value="warm_coral" style="background-color: #E8715A;" type="button" aria-label="Warm coral" title="Warm coral" tabindex="0"></button>
+          <button class="color-swatch" data-value="deep_lavender" style="background-color: #7C5CBF;" type="button" aria-label="Deep lavender" title="Deep lavender" tabindex="0"></button>
+          <button class="color-swatch" data-value="ocean_teal" style="background-color: #2D9CDB;" type="button" aria-label="Ocean teal" title="Ocean teal" tabindex="0"></button>
+          <button class="color-swatch" data-value="forest_green" style="background-color: #3D8B5E;" type="button" aria-label="Forest green" title="Forest green" tabindex="0"></button>
+          <button class="color-swatch" data-value="blush_pink" style="background-color: #F2A7BB;" type="button" aria-label="Blush pink" title="Blush pink" tabindex="0"></button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Step 3: Gender -->
+      <section class="quiz-step" id="step-3" data-key="gender" aria-label="Question 3: Gender identity">
+        <h2>How do you identify?</h2>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="woman" type="button">
+            <span>Woman</span>
+          </button>
+          <button class="quiz-option" data-value="man" type="button">
+            <span>Man</span>
+          </button>
+          <button class="quiz-option" data-value="non-binary" type="button">
+            <span>Non-binary</span>
+          </button>
+          <button class="quiz-option" data-value="prefer_not_to_say" type="button">
+            <span>Prefer not to say</span>
+          </button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Step 4: Age Group -->
+      <section class="quiz-step" id="step-4" data-key="age_group" aria-label="Question 4: Age group">
+        <h2>Which age group are you in?</h2>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="under_25" type="button">
+            <span>Under 25</span>
+          </button>
+          <button class="quiz-option" data-value="25-34" type="button">
+            <span>25&ndash;34</span>
+          </button>
+          <button class="quiz-option" data-value="35-44" type="button">
+            <span>35&ndash;44</span>
+          </button>
+          <button class="quiz-option" data-value="45-54" type="button">
+            <span>45&ndash;54</span>
+          </button>
+          <button class="quiz-option" data-value="55+" type="button">
+            <span>55+</span>
+          </button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Step 5: Stress Source -->
+      <section class="quiz-step" id="step-5" data-key="stress_source" aria-label="Question 5: Stress source">
+        <h2>What's weighing on you most right now?</h2>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="work_overload" type="button">
+            <span>Work overload</span>
+          </button>
+          <button class="quiz-option" data-value="relationship_tension" type="button">
+            <span>Relationship tension</span>
+          </button>
+          <button class="quiz-option" data-value="feeling_stuck" type="button">
+            <span>Feeling stuck or unmotivated</span>
+          </button>
+          <button class="quiz-option" data-value="physical_tiredness" type="button">
+            <span>Physical tiredness</span>
+          </button>
+          <button class="quiz-option" data-value="craving_treat" type="button">
+            <span>Just craving a treat</span>
+          </button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Step 6: Budget -->
+      <section class="quiz-step" id="step-6" data-key="budget_tier" aria-label="Question 6: Budget">
+        <h2>What feels right to spend on yourself today?</h2>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="under_20" type="button">
+            <span>Under $20</span>
+          </button>
+          <button class="quiz-option" data-value="20-50" type="button">
+            <span>$20&ndash;$50</span>
+          </button>
+          <button class="quiz-option" data-value="50-100" type="button">
+            <span>$50&ndash;$100</span>
+          </button>
+          <button class="quiz-option" data-value="100+" type="button">
+            <span>$100+</span>
+          </button>
+        </div>
+        <div class="quiz-nav">
+          <button class="quiz-back" type="button" aria-label="Go back">&larr; Back</button>
+        </div>
+      </section>
+
+      <!-- Loading State -->
+      <div class="quiz-loading" id="quiz-loading">
+        <div class="spinner"></div>
+        <p class="text-muted">Finding your perfect picks...</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p class="footer-privacy">We don't store personal information. Quiz answers are saved anonymously to improve recommendations.</p>
+      <div class="footer-links">
+        <a href="/zencart/stats.html">Stats</a>
+        <a href="/zencart/sitemap.xml">Sitemap</a>
+        <a href="/zencart/about.html">About</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 ZenCart. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

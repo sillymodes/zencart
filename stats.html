@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Statistics - Anonymous Quiz and Visitor Data | ZenCart</title>
+  <meta name="description" content="View anonymous, aggregated statistics about ZenCart quizzes, visitor trends, and popular stress sources. All data is anonymous with no personal info collected.">
+  <link rel="canonical" href="https://sillymodes.github.io/zencart/stats.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Site Statistics - Anonymous Quiz and Visitor Data | ZenCart">
+  <meta property="og:description" content="View anonymous, aggregated statistics about ZenCart quizzes, visitor trends, and popular stress sources.">
+  <meta property="og:image" content="https://sillymodes.github.io/zencart/assets/img/og-image.jpg">
+  <meta property="og:url" content="https://sillymodes.github.io/zencart/stats.html">
+  <meta property="og:type" content="website">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/zencart/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/zencart/favicon.ico">
+  <link rel="apple-touch-icon" href="/zencart/assets/img/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/zencart/assets/css/style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+
+  <!-- Scripts -->
+  <script src="/zencart/assets/js/api.js" defer></script>
+  <script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile nav toggle
+      var toggle = document.querySelector('.nav-toggle');
+      var links = document.querySelector('.nav-links');
+      if (toggle && links) {
+        toggle.addEventListener('click', function() {
+          links.classList.toggle('open');
+        });
+      }
+
+      // Log pageview
+      if (typeof logPageview === 'function') logPageview('stats');
+
+      // Load stats data
+      loadStats();
+    });
+
+    async function loadStats() {
+      var loadingEl = document.getElementById('stats-loading');
+      var contentEl = document.getElementById('stats-content');
+      var errorEl = document.getElementById('stats-error');
+
+      try {
+        var data = await getStats();
+
+        // Populate number cards
+        var quizzesAllTime = data.quizzes_all_time || 0;
+        var quizzesThisMonth = data.quizzes_this_month || 0;
+        var avgStars = data.avg_stars || 0;
+        var pageViews30d = data.page_views_30d || 0;
+        var stressSources = data.stress_sources || {};
+
+        document.getElementById('stat-quizzes-all').textContent = quizzesAllTime.toLocaleString();
+        document.getElementById('stat-quizzes-month').textContent = quizzesThisMonth.toLocaleString();
+        document.getElementById('stat-pageviews').textContent = pageViews30d.toLocaleString();
+
+        // Average star rating with stars
+        var roundedStars = Math.round(avgStars * 10) / 10;
+        document.getElementById('stat-avg-rating-number').textContent = roundedStars.toFixed(1);
+        document.getElementById('stat-avg-rating-stars').innerHTML = renderStarsHTML(avgStars);
+
+        // Build bar chart for stress sources
+        renderStressChart(stressSources);
+
+        // Show content, hide loading
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'block';
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    function renderStarsHTML(rating) {
+      var html = '';
+      for (var i = 1; i <= 5; i++) {
+        if (rating >= i - 0.25) {
+          html += '<span class="star-filled" aria-hidden="true">&#9733;</span>';
+        } else if (rating >= i - 0.75) {
+          html += '<span class="star-half" aria-hidden="true">&#9733;</span>';
+        } else {
+          html += '<span class="star-empty" aria-hidden="true">&#9734;</span>';
+        }
+      }
+      return html;
+    }
+
+    function renderStressChart(stressSources) {
+      var labels = Object.keys(stressSources);
+      var values = Object.values(stressSources);
+
+      // If no data, show a message
+      if (labels.length === 0) {
+        document.getElementById('stress-chart-container').innerHTML =
+          '<p class="text-muted text-center" style="padding:2rem 0;">No stress source data available yet.</p>';
+        return;
+      }
+
+      // Friendly label mapping
+      var labelMap = {
+        'work': 'Work overload',
+        'work_overload': 'Work overload',
+        'relationship': 'Relationship tension',
+        'relationship_tension': 'Relationship tension',
+        'stuck': 'Feeling stuck',
+        'feeling_stuck': 'Feeling stuck',
+        'tired': 'Physical tiredness',
+        'physical_tiredness': 'Physical tiredness',
+        'treat': 'Just craving a treat',
+        'craving_treat': 'Just craving a treat'
+      };
+
+      var friendlyLabels = labels.map(function(l) {
+        return labelMap[l] || l.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      });
+
+      var ctx = document.getElementById('stressChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: friendlyLabels,
+          datasets: [{
+            label: 'Responses',
+            data: values,
+            backgroundColor: [
+              'rgba(61, 153, 112, 0.7)',
+              'rgba(244, 162, 97, 0.7)',
+              'rgba(45, 156, 219, 0.7)',
+              'rgba(124, 92, 191, 0.7)',
+              'rgba(242, 167, 187, 0.7)'
+            ],
+            borderColor: [
+              '#3D9970',
+              '#F4A261',
+              '#2D9CDB',
+              '#7C5CBF',
+              '#F2A7BB'
+            ],
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1A2E26',
+              titleFont: { family: "'DM Sans', sans-serif" },
+              bodyFont: { family: "'DM Sans', sans-serif" },
+              cornerRadius: 8,
+              padding: 12
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                font: { family: "'DM Sans', sans-serif", size: 13 },
+                color: '#5A7A6E'
+              },
+              grid: {
+                color: 'rgba(208, 232, 220, 0.5)'
+              }
+            },
+            x: {
+              ticks: {
+                font: { family: "'DM Sans', sans-serif", size: 12 },
+                color: '#5A7A6E',
+                maxRotation: 45,
+                minRotation: 0
+              },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="container">
+      <a href="/zencart/" class="nav-brand" aria-label="ZenCart Home">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M16 4C12 4 8 8 8 14c0 4 2 7 4 9 1.5 1.5 3 2.5 4 3 1-0.5 2.5-1.5 4-3 2-2 4-5 4-9 0-6-4-10-8-10z" fill="#3D9970" opacity="0.3"/>
+          <path d="M16 6c-3 0-6 3.5-6 8.5 0 3.5 1.8 6 3.5 7.8C14.7 23.5 15.5 24 16 24.5c.5-.5 1.3-1 2.5-2.2C20.2 20.5 22 18 22 14.5 22 9.5 19 6 16 6z" fill="#3D9970"/>
+          <path d="M16 11c-1.5 0-3 1.2-3 3.5s1.5 4 3 5c1.5-1 3-2.7 3-5S17.5 11 16 11z" fill="#F0F7F4"/>
+        </svg>
+        ZenCart
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links">
+        <li><a href="/zencart/">Home</a></li>
+        <li><a href="/zencart/reviews.html">Reviews</a></li>
+        <li><a href="/zencart/about.html">About</a></li>
+        <li><a href="https://buymeacoffee.com/timtian" target="_blank" rel="noopener noreferrer" class="nav-bmc">&#9749; Buy Me a Coffee</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section class="page-header">
+      <h1>Site statistics</h1>
+      <p>All data is anonymous and aggregated. No personal information is collected.</p>
+    </section>
+
+    <!-- Loading state -->
+    <div id="stats-loading" class="container page-content">
+      <div class="stats-loading-state">
+        <div class="spinner"></div>
+        <p class="text-muted text-center">Loading statistics...</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="stats-error" class="container page-content" style="display:none;">
+      <div class="error-state">
+        <div class="error-icon">&#128202;</div>
+        <p>We couldn't load the statistics right now. Please try again later.</p>
+        <button class="btn btn-outline" onclick="location.reload()">Try again</button>
+      </div>
+    </div>
+
+    <!-- Stats content -->
+    <div id="stats-content" class="container page-content" style="display:none;">
+
+      <!-- Number cards row -->
+      <section class="stats-grid" aria-label="Key statistics">
+        <article class="card stat-card">
+          <div class="stat-number" id="stat-quizzes-all">--</div>
+          <div class="stat-label">Quizzes completed (all time)</div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-number" id="stat-quizzes-month">--</div>
+          <div class="stat-label">Quizzes this month</div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-number stat-rating-card">
+            <span id="stat-avg-rating-number">--</span>
+            <div class="stat-stars-row" id="stat-avg-rating-stars"></div>
+          </div>
+          <div class="stat-label">Average review rating</div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-number" id="stat-pageviews">--</div>
+          <div class="stat-label">Page views (last 30 days)</div>
+        </article>
+      </section>
+
+      <!-- Bar chart: stress sources -->
+      <section class="stats-chart-section" aria-label="Most common stress sources">
+        <h2>Most common stress sources</h2>
+        <p class="text-muted">What's weighing on our visitors most, based on anonymous quiz answers.</p>
+        <div id="stress-chart-container" class="stats-chart-wrapper">
+          <canvas id="stressChart" aria-label="Bar chart showing distribution of stress sources" role="img"></canvas>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <div class="text-center" style="padding: 1rem 0 2rem;">
+        <a href="/zencart/quiz.html" class="btn btn-primary">Take the quiz &rarr;</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p class="footer-privacy">We don't store personal information. Quiz answers are saved anonymously to improve recommendations.</p>
+      <div class="footer-links">
+        <a href="/zencart/stats.html">Stats</a>
+        <a href="/zencart/sitemap.xml">Sitemap</a>
+        <a href="/zencart/about.html">About</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 ZenCart. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
