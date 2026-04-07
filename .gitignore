@@ -1,0 +1,16 @@
+# Project documents — keep local only
+project_design_and_protocol.md
+project_progress_and_results.md
+PROGRESS.md
+
+# Secrets
+../info.txt
+info.txt
+.env
+.dev.vars
+
+# Wrangler config (use wrangler.example.toml as safe reference)
+wrangler.toml
+
+# Node
+node_modules/
